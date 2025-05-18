@@ -1,0 +1,36 @@
+ DevOps Pipeline YAML
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  DATABRICKS_HOST: $(databricksHost)
+  DATABRICKS_TOKEN: $(databricksToken)
+
+steps:
+  - checkout: self
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+
+  - script: pip install databricks-cli
+    displayName: 'Install Databricks CLI'
+
+  - script: databricks bundle validate
+    displayName: 'Validate DABs Bundle'
+
+  - script: databricks bundle deploy -t dev
+    displayName: 'Deploy to Dev'
+
+  - script: databricks bundle run -t dev test_job
+    displayName: 'Run Integration Tests'
+
+  - script: databricks bundle deploy -t prod
+    displayName: 'Deploy to Production'
+    condition: succeeded()
